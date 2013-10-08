@@ -29,6 +29,13 @@ Binary = xmlrpclib.Binary
 Boolean = xmlrpclib.Boolean
 DateTime = xmlrpclib.DateTime
 
+def with_request(method):
+    """
+    Decorator to enable the request to be passed as the first argument.
+    """
+    method.with_request = True
+    return method
+
 
 class NoSuchFunction(Fault):
     """
@@ -116,6 +123,10 @@ class JSONRPC(resource.Resource, BaseSubhandler):
                 request.setHeader("content-type", "text/json")
             else:
                 request.setHeader("content-type", "text/javascript")
+
+            if hasattr(function, 'with_request'):
+                args = [request] + args
+
             d = defer.maybeDeferred(function, *args)
             d.addErrback(self._ebRender, id)
             d.addCallback(self._cbRender, request, id, version)
