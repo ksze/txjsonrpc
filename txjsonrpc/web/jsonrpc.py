@@ -29,6 +29,7 @@ Binary = xmlrpclib.Binary
 Boolean = xmlrpclib.Boolean
 DateTime = xmlrpclib.DateTime
 
+
 def with_request(method):
     """
     Decorator to enable the request to be passed as the first argument.
