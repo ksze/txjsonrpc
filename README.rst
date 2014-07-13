@@ -1,3 +1,9 @@
+::
+
+	This is a temporary fork of oubiwann/txjsonrpc for local usage.
+	Use and contribute to upstream repository if possible.
+
+
 ============
 Introduction
 ============
