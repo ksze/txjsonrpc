@@ -98,7 +98,7 @@ class JSONRPC(resource.Resource, BaseSubhandler):
         functionPath = parsed.get("method")
         params = parsed.get('params')
         args, kwargs = [], {}
-        if params.__class__ == list:
+        if isinstance(params, list):
           args = params
         else:
           kwargs = params
