@@ -55,13 +55,15 @@ def dumps(obj, **kwargs):
         version = kwargs.pop("version")
     except KeyError:
         version = VERSION_PRE1
+
     try:
         id = kwargs.pop("id")
     except KeyError:
         id = None
+
     if isinstance(obj, Exception):
         result = None
-        if version!=VERSION_2:
+        if version != VERSION_2:
             error = {'fault': obj.__class__.__name__,
                     'faultCode': obj.faultCode,
                     'faultString': obj.faultString}
@@ -72,6 +74,7 @@ def dumps(obj, **kwargs):
     else:
         result = obj
         error = None
+
     if version == VERSION_PRE1:
         if result:
             obj = result
@@ -86,6 +89,7 @@ def dumps(obj, **kwargs):
             obj = {"jsonrpc": "2.0", "result": result, "id": id}
     else:
         obj = {"result": result, "error": error, "id": id}
+
     return json.dumps(obj, cls=JSONRPCEncoder, **kwargs)
 
 

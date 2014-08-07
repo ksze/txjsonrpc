@@ -105,26 +105,32 @@ class JSONRPC(resource.Resource, BaseSubhandler):
         request.content.seek(0, 0)
         # Unmarshal the JSON-RPC data.
         content = request.content.read()
+
         if not content and request.method=='GET' and request.args.has_key('request'):
             content=request.args['request'][0]
+
         self.callback = request.args['callback'][0] if request.args.has_key('callback') else None
         self.is_jsonp = True if self.callback else False
         parsed = jsonrpclib.loads(content)
         functionPath = parsed.get("method")
         params = parsed.get('params')
         args, kwargs = [], {}
+
         if isinstance(params, list):
           args = params
-        else:
+        elif isinstance(params, dict):
           kwargs = params
+
         id = parsed.get('id')
         version = parsed.get('jsonrpc')
+
         if version:
             version = int(float(version))
         elif id and not version:
             version = jsonrpclib.VERSION_1
         else:
             version = jsonrpclib.VERSION_PRE1
+
         # XXX this all needs to be re-worked to support logic for multiple
         # versions...
         try:
@@ -146,21 +152,26 @@ class JSONRPC(resource.Resource, BaseSubhandler):
 
             def _responseFailed(err, call):
                 call.cancel()
+
             request.notifyFinish().addErrback(_responseFailed, d)
+
         return server.NOT_DONE_YET
 
     def _cbRender(self, result, request, id, version):
         if isinstance(result, Handler):
             result = result.result
+
         if version == jsonrpclib.VERSION_PRE1:
             if not isinstance(result, jsonrpclib.Fault):
                 result = (result,)
             # Convert the result (python) to JSON-RPC
+
         try:
             s = jsonrpclib.dumps(result, id=id, version=version) if not self.is_jsonp else "%s(%s)" %(self.callback,jsonrpclib.dumps(result, id=id, version=version))
         except:
             f = jsonrpclib.Fault(self.FAILURE, "can't serialize output")
             s = jsonrpclib.dumps(f, id=id, version=version) if not self.is_jsonp else "%s(%s)" %(self.callback,jsonrpclib.dumps(f, id=id, version=version))
+
         request.setHeader("content-length", str(len(s)))
         request.write(s)
         request.finish()
@@ -168,7 +179,9 @@ class JSONRPC(resource.Resource, BaseSubhandler):
     def _ebRender(self, failure, id):
         if isinstance(failure.value, jsonrpclib.Fault):
             return failure.value
+
         log.err(failure)
+
         return jsonrpclib.Fault(self.FAILURE, "error")
 
 
@@ -180,10 +193,12 @@ class QueryProtocol(http.HTTPClient):
         self.sendHeader('Host', self.factory.host)
         self.sendHeader('Content-type', 'text/json')
         self.sendHeader('Content-length', str(len(self.factory.payload)))
+
         if self.factory.user:
             auth = '%s:%s' % (self.factory.user, self.factory.password)
             auth = auth.encode('base64').strip()
             self.sendHeader('Authorization', 'Basic %s' % (auth,))
+
         self.endHeaders()
         self.transport.write(self.factory.payload)
 
@@ -251,27 +266,36 @@ class Proxy(BaseProxy):
         BaseProxy.__init__(self, version, factoryClass)
         scheme, netloc, path, params, query, fragment = urlparse.urlparse(url)
         netlocParts = netloc.split('@')
+
         if len(netlocParts) == 2:
             userpass = netlocParts.pop(0).split(':')
             self.user = userpass.pop(0)
+
             try:
                 self.password = userpass.pop(0)
             except:
                 self.password = None
         else:
             self.user = self.password = None
+
         hostport = netlocParts[0].split(':')
         self.host = hostport.pop(0)
+
         try:
             self.port = int(hostport.pop(0))
         except:
             self.port = None
+
         self.path = path
+
         if self.path in ['', None]:
             self.path = '/'
+
         self.secure = (scheme == 'https')
+
         if user is not None:
             self.user = user
+
         if password is not None:
             self.password = password
 
@@ -283,6 +307,7 @@ class Proxy(BaseProxy):
         factoryClass = self._getFactoryClass(kwargs)
         factory = factoryClass(self.path, self.host, method, self.user,
             self.password, version, *args)
+
         if self.secure:
             from twisted.internet import ssl
             if self.ssl_ctx_factory is None:
@@ -291,6 +316,7 @@ class Proxy(BaseProxy):
                                factory, self.ssl_ctx_factory())
         else:
             reactor.connectTCP(self.host, self.port or 80, factory)
+
         return factory.deferred
 
 __all__ = ["JSONRPC", "Handler", "Proxy"]
